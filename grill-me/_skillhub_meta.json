@@ -1,0 +1,12 @@
+{
+  "name": "grill-me",
+  "installedAt": 1784684446161,
+  "source": "marketplace",
+  "iconSource": "grill-me",
+  "version": "1.0.0",
+  "skillId": "skill_2057443369928683520",
+  "skillName": "grill-me",
+  "description_zh": "深度追问式方案审查：逐层拆解设计决策，直到达成共识",
+  "description_en": "Relentless interview to stress-test your plan, resolving each decision branch one by one",
+  "installedContentHash": "sha256:29ad8e369be56458935f7025f1c1d101a42ebcec9b1eb439b188a58d654effb4"
+}

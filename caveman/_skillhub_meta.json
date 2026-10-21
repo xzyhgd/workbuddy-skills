@@ -1,0 +1,12 @@
+{
+  "name": "caveman",
+  "installedAt": 1784684434415,
+  "source": "marketplace",
+  "iconSource": "caveman",
+  "version": "1.0.0",
+  "skillId": "skill_2057443403470532608",
+  "skillName": "caveman",
+  "description_zh": "超压缩沟通模式：去除废话保留技术精度，节省约 75% token",
+  "description_en": "Ultra-compressed mode: drops filler, keeps full technical accuracy, cuts ~75% tokens",
+  "installedContentHash": "sha256:3697bf0d4d32ba95cf463e634f4516a9910a94bc569dee811f8e250637c493a6"
+}

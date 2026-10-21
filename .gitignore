@@ -1,0 +1,22 @@
+﻿# OS junk
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Secrets / local state - never sync
+*.key
+*.pem
+*.token
+*.local
+.env
+.env.*
+credentials.json
+
+# Logs
+*.log
+
+# Dependency / build artifacts
+node_modules/
+__pycache__/
+*.pyc
+.venv/
