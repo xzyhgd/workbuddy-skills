@@ -34,3 +34,8 @@ _probe_*.txt
 # Third-party skill installed from its own GitHub repo (Panniantong/Agent-Reach)
 # Keep it local-only; sync from source on each machine instead of bundling into this repo.
 /agent-reach/
+
+# Large demo/example media inside third-party skills -- sample images/audio only;
+# no runtime code references them. Kept on disk locally, excluded from sync for speed.
+/last30days/assets/
+/gpt-image-2-style-library/assets/
