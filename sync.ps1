@@ -1,25 +1,42 @@
 # ============================================================
-#  WorkBuddy Skills 一键同步脚本 (PowerShell)
-#  流程: pull -> add -> commit -> push
-#  首次使用需先配置远程仓库:
-#    git remote add origin https://<your-repo-url>.git
+#  WorkBuddy Skills one-click sync (PowerShell) - plain git, no extra deps
+#  Flow: pull -> add -> commit -> push
+#  - GIT_TERMINAL_PROMPT=0 : never block on a credential prompt
+#  - http.version=HTTP/1.1 : avoid proxy HTTP/2 (CONNECT tunnel) failures
+#  - lowSpeedLimit/Time    : abort a stalled transfer instead of hanging
 # ============================================================
-Set-Location $PSScriptRoot
+$ErrorActionPreference = 'Continue'
+Set-Location -LiteralPath $PSScriptRoot
+$env:GIT_TERMINAL_PROMPT = '0'
 
-try { git pull --rebase 2>$null } catch { }
-
-git add -A
-$hasChanges = ((git diff --cached --quiet); $LASTEXITCODE) -ne 0
-if ($hasChanges) {
-    git commit -m "sync: $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
-    Write-Host "[sync] 已提交本地改动。"
-} else {
-    Write-Host "[sync] 没有需要提交的本地改动。"
-}
-
-git push
+Write-Host "[sync] Step 1/3: pull --rebase from remote..."
+git -c http.version=HTTP/1.1 -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 pull --rebase
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "[sync] 同步完成。"
+    Write-Host "[sync] pull OK."
 } else {
-    Write-Host "[sync] 推送失败：请先配置远程仓库（git remote add origin <url>）并确保已登录。"
+    Write-Host "[sync] pull skipped/failed (network). Continuing."
 }
+
+Write-Host "[sync] Step 2/3: add + commit..."
+git add -A
+git diff --cached --quiet
+if ($LASTEXITCODE -ne 0) {
+    git commit -m "sync: $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "[sync] committed local changes."
+    } else {
+        Write-Host "[sync] commit FAILED - see the message above."
+    }
+} else {
+    Write-Host "[sync] no local changes to commit."
+}
+
+Write-Host "[sync] Step 3/3: push to remote..."
+git -c http.version=HTTP/1.1 -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 push
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "[sync] push OK - synced."
+} else {
+    Write-Host "[sync] push failed (likely network). Re-run this script when network recovers."
+}
+
+Write-Host "[sync] Finished."
