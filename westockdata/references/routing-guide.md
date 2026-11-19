@@ -58,7 +58,7 @@
 | 用户给名称查指数 | `westock search <关键词> --type index` | 与 `westock quote sh000300` 不同：搜索返回清单，`westock quote` 是已知代码查行情；**不要**用 `westock index list` 翻整张清单（>1400 条）找 |
 | 用户想搜板块/概念（如"银行"/"华为概念"） | `westock search <关键词> --type sector` | 跨全部清单一次搜；拿到 code 后再 `westock sector constituent` / `westock sector info` 等 |
 | 某天的财报发布事件（沪深/港/美） | `westock calendar --event financial_report --market hs` | 用本 skill `westock calendar`，**勿用** `westock screen event` |
-| 某天的分红派息 / 停复牌 / 股东大会等日历 | `westock calendar --event dividend\|trading_halt\|meeting --market hs` | `--event` 多类型用逗号分隔 |
+| 某天的分红派息 / 停复牌 / 股东大会等日历 | `westock calendar --event dividend\|suspension\|meeting --market hs` | `--event` 多类型用逗号分隔 |
 | 最近有哪些新股 | `westock ipo --market hs` 或 `westock calendar --event ipo --market hk` | 勿用 `westock-screener` |
 | 查 ETF 净值历史（NAV） | `westock etf nav <代码> [--start ... --end ...]`（可批量） | **不是 `westock kline`** |
 | 基金档案 + 资产配置 | `westock etf profile <代码>` | 分类/管理人/费率/策略 + 资产配置 |
@@ -84,7 +84,7 @@
 | 期货搜合约 → 看资料 | `westock search <关键词> --type futures` → `westock futures detail <代码>` | 不要用 `web_search` 找代码 |
 | 热门财经资讯/热文 | `westock hot news` | `westock hot` 命令族子命令：stock/news/sector/etf |
 | 查板块行情榜 / 板块详情 | `westock sector ranking` / `westock sector info <代码>` | 板块资金流向、涨跌幅等 |
-| 查停复牌（按日期/市场） | `westock suspension --market hs\|hk\|us` | 与 `westock calendar --event trading_halt` 的区别：`westock suspension` 直接返回当前停复牌列表，`westock calendar` 只在指定日期有事件时返回；港股停牌优先用 `westock suspension` |
+| 查停复牌（按日期/市场） | `westock calendar --event suspension --market hs` | 停复牌走日历 `suspension`，三市场均支持 |
 | 查公司基本信息（主营/简介/地址） | `westock profile <代码>`（支持批量） | `westock quote` 是行情快照，不含公司简介；批量用 `westock profile sh600519,hk00700` 而不是 `westock quote` |
 | 查个股所属行业/板块（申万行业等） | `westock profile <代码>`（支持批量） | ⚠️ **不是** `westock sector constituent`！`constituent` 是「板块→成份股」，方向相反 |
 | 单板块估值精查 | `westock sector valuation <pt代码>` | 仅板块代码；`--date` 指定截面日；产业概念自动 merge 5 张估值表 |
@@ -132,7 +132,7 @@
 | `westock search` / `westock minute` | 不支持多代码批量；`westock minute` 仅单代码 |
 | `westock fund north-holding` | 个股支持逗号批量；板块代码可多只；不可与个股混查 |
 | `westock fund south-holding` | 仅港股；支持逗号批量 |
-| `westock fund flow` | 可多代码，但**须同一市场**（跨市场须分开查） |
+| `westock fund flow` | 截面可多代码且**可跨市场混批**；带 `--start/--end` 走历史时单次上限 10 只 |
 | `westock fund margin` / `westock fund block` / `westock fund lhb` | 仅沪深（sh/sz）；支持逗号批量 |
 | `westock industry-chain <代码>` | 仅单股查所属产业链 |
 | `westock kline` + 期货 `fu*`/`fx*` | 仅单代码 |
@@ -187,7 +187,7 @@ westock quote sh600000,sz000001,hk00700,usAAPL            # 批量（混合市�
 westock finance sh600519,sz000651 --limit 4                            # 批量三大表（同市场，省略 --type）
 westock finance sh600519,hk00700 --type income --limit 4              # 跨市场对比须 --type，且勿混批比口径
 westock consensus sz300750,hk00700                        # 一致预期批量（A+H 混合）
-westock risk sh600000,sz000001,sh600036                   # 风险事件批量
+westock risk sh600000,sz000001,sh600036                   # 风险事件批量（上限 10 只，开销大、建议每批 ≤4）
 westock index constituent sh000300,hkHSI                  # 指数成份批量
 westock sector constituent pt01801080,pt01801780          # 板块成份批量
 westock sector info pt02003900,pt02003640                 # 板块信息批量
@@ -201,6 +201,7 @@ westock sector valuation pt01801080,pt01801780            # 板块估值截面�
 - ❌ **禁止「部分批量、部分单股」**——例如 `westock finance sh600519,sz000651` 已批量，却又把 `westock kline`/`westock technical` 拆成两次单股调用；凡 [§六](#六能力差异速查标的--维度) 未列为例外的命令，对比场景一律批量
 - ❌ **不要拆成多条独立命令再人工拼接**——同一命令分多次调用浪费 token、断言可能判错；批量返回还能保证字段对齐
 - ❌ **不要用 shell `&&`/并行进程**调多条同类命令——直接逗号分隔
+- ⚠️ **各命令有单次代码上限**（50 / 20 / 10 三档，超限直接报参数错误），超出须分批；上限表见 [commands.md §〇](./commands.md#〇批量与代码上限)
 - ⚠️ **不支持代码批量**见 [§六能力差异](#六能力差异速查标的--维度) 表格；**支持批量**的常见命令：
 
 ```bash

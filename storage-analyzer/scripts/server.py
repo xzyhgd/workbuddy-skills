@@ -206,9 +206,21 @@ class Handler(BaseHTTPRequestHandler):
             if rp not in allow:
                 self._send(403, json.dumps({"ok": False, "error": "路径不在白名单：%s" % p}))
                 return
-            # 二级护栏：只允许用户目录或 /Applications（后者仅 open 用，删除白名单不含它）
-            roots = (HOME, "/Applications")
-            if not any(rp == base or rp.startswith(base + os.sep) for base in roots):
+            # 二级护栏：删除类操作只允许用户目录（/Applications 仅兼容 macOS，删除白名单本就不含它）。
+            # "open" 是非破坏性的：Windows 多盘资料、Program Files 里的应用本体也允许定位。
+            roots = [HOME, "/Applications"]
+            if mode == "open":
+                import string
+                for letter in string.ascii_uppercase:
+                    drive = "%s:\\" % letter
+                    if os.path.exists(drive):
+                        roots.append(os.path.realpath(drive))
+
+            def under(base):
+                base = base.rstrip("\\/") or os.sep
+                return rp == base or rp == base + os.sep or rp.startswith(base + os.sep)
+
+            if not any(under(base) for base in roots):
                 self._send(403, json.dumps({"ok": False, "error": "路径越界：%s" % p}))
                 return
             try:

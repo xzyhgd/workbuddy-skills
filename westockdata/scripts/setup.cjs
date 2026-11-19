@@ -23,10 +23,10 @@ function hasChannel() {
 const CLI_BASE_DEFAULT = 'https://stockbuddy.gtimg.com/release/wbgeneral/cli';
 
 // 「SHA256.txt 清单文件」自身的预期哈希，作为独立于发布源的信任根。
-const PINNED_MANIFEST_SHA256 = '386ad06e07dcb2646d12ec2232f228634f586f640b21f651b115f1b354464c9b';
+const PINNED_MANIFEST_SHA256 = '5fcd9fce35692a2e7abedb2802c6201926043c5a6729bd8e723ea3c3182ab26a';
 
 // 本包对应的发布版本 tag（与该版本 SHA256.txt 信任根配套）。
-const PINNED_VERSION = 'v0.0.7';
+const PINNED_VERSION = 'v0.0.11';
 
 // 发布签名公钥（ed25519，SubjectPublicKeyInfo DER 的 base64）。已注入时强制校验 SHA256.txt.sig。
 const SIGN_PUBKEY_B64 = 'MCowBQYDK2VwAyEAuUWTdpzqYIBKNNCrOYP4zZOjTaMxKz5vSrE5Gc+NUU0=';

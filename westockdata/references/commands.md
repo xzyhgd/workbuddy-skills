@@ -17,6 +17,25 @@
 >
 ---
 
+## 〇、批量与代码上限
+
+多标的一律用逗号写在**同一条命令**里。各命令**单次代码上限不同**，超限直接报参数错误（按报错分批即可）：
+
+| 单次上限 | 命令 | 批量开销 |
+|---|---|---|
+| 不限（建议 ≤100/批） | `quote` | 整批一次取回 |
+| 50 | `profile`、`fund flow`（不带 `--start/--end`）、`disclosure`、`bond`、`etf profile` / `etf overview`、`fund south-holding`、`sector` 子命令（`oper` 与港美股 `constituent` 除外） | 整批一次取回 |
+| 20 | `technical` / `chip` 截面、`kline` | 截面整批一次；`kline` 每 10 只一次 |
+| 10 | `notice list`、`news list`、`report list`、`finance`、`earnings`、`shareholder`、`dividend`、`buyback`、`event`、`risk`、`etf holdings` / `nav`、`index constituent`、`rating`、`consensus`、`score`、`esg`、`technical` / `chip` 历史、`fund flow --start/--end`、`fund short` / `margin` / `block` / `lhb` / `north-holding` | 逐只取回 |
+
+- **「整批一次」的命令**：耗时与代码数无关，按上限发满即可。
+- **「逐只取回」的命令**：耗时随只数线性增长，连续大批量容易触发服务端限频（配额按取回次数计、**所有命令共用**）。所以要先确定真正需要的标的再查，不要先全量拉再筛。
+- **`risk` 最贵**：每只要查 8 类风险（相当于 8 次取回），10 只就抵得上 80 只普通逐只查询，建议每批 ≤4 只。
+- **一条命令内两种路径并存**：`shareholder`（港股整批 / A 股逐只 / 美股不支持）、`event`（港股与美股整批 / A 股逐只），上限按最严的取 10。照样一次传多只，CLI 内部已按市场分流，不要自己拆成多条命令。
+- **不支持代码批量**：`search`、`minute`（仅单代码）；`kline` 查期货 `fu*` / 外汇 `fx*` 时仅单代码。
+
+---
+
 ## 一、行情
 
 > 价格序列（实时行情、分时、K 线）。含单标的时序数据（`westock quote`/`westock kline`/`westock minute`）。
@@ -41,7 +60,7 @@ westock minute sh600000 --days 5          # 分时（1~5日）
 
 ```
 
-> 实时行情按市场差异化：A股含涨跌停价/盘前竞价/每手/股息TTM；港股含每手/ADR；美股含盘前盘后/EPS TTM。`westock search`/`westock minute` 不支持多代码批量；`westock fund flow` 跨市场须分开查。完整列表见 [SKILL.md](../SKILL.md) 或 [routing-guide.md §六/§九](./routing-guide.md)。
+> 实时行情按市场差异化：A股含涨跌停价/盘前竞价/每手/股息TTM；港股含每手/ADR；美股含盘前盘后/EPS TTM。`westock search`/`westock minute` 不支持多代码批量；`westock fund flow` 截面可跨市场混批（美股无资金流会逐只报错），带 `--start/--end` 走历史则单次上限 10。代码上限见 [§〇](#〇批量与代码上限)，完整能力差异见 [routing-guide.md §六/§九](./routing-guide.md)。
 > **K线日期范围**：`westock kline` 支持 `--start` / `--end`（YYYY-MM-DD），优先级高于 `--limit`；范围模式下 `--limit` 仅作为返回条数上限保护，默认放宽到 2000。仅指定 `--start` 时 `end` 默认今天；仅指定 `--end` 时自动按周期回溯一段窗口。**期货/外汇 K 线暂不支持日期范围**，传入会自动降级到 `--limit` 模式并提示。
 > **单次查询窗口上限**：单次请求返回的 K 线条数有上限，超过上限时仅返回固定数量的数据。
 > ⚠️ **分钟K标的范围**：分钟K（`m1/m5/m15/m30/m60/m120`）支持除**美股指数**外的所有标的；美股指数仅支持日K，带分钟周期会返回 `KLINE_002`。分钟K强制不复权；不指定日期时返回最新数据。**分钟K的 `--start/--end` 跨度有上限**（`m1` 5 天、`m5` 10 天、`m15` 20 天、`m30` 30 天、`m60` 60 天、`m120` 90 天），超过会返回 `KLINE_003` 并提示缩小范围——分钟数据量大，请分段查询而非一次拉大区间。
@@ -160,13 +179,15 @@ westock changedist                         # 沪深A股涨跌分布（涨跌/涨
 
 ## 四、指数
 
-> 指数清单、搜索与成份股（A 股 + 港股）。行情/K 线/分时复用 `westock quote` / `westock kline` / `westock minute`。
+> 指数清单、搜索、成份股与指数表现（A 股 + 港股）。行情/K 线/分时复用 `westock quote` / `westock kline` / `westock minute`。
 
 ```bash
 westock index constituent sh000300        # A股指数成份股
 westock index constituent hkHSI           # 港股指数成份股（恒生指数）
 westock index constituent hkHSCEI,hkHSTECH # 多个港股指数
 westock index list                         # 指数清单（支持 --limit/--offset 分页）
+westock index performance hkHSTECH        # 港股指数表现（单个指数）
+westock index performance hkHSTECH,hkHSI,hkVHSI  # 多个指数（逗号分隔）
 westock search 沪深300 --type index        # 搜索指数（统一 search 入口）
 
 ```
@@ -331,7 +352,8 @@ westock report detail <研报ID>                # 研报详情（ID 从研报列
 ```bash
 westock event sh600519 --type shares          # A股 股本结构
 westock event sh600519 --type institution     # A股 机构持股
-westock event hk00700 --type rating           # 港股 机构评级
+westock event hk00700 --type dividend         # 港股 分红
+westock event hk00700 --type buyback          # 港股 回购
 westock event usT --type dividend             # 美股 分红派息（每股分红完整精度）
 westock event usAAPL --type financial_report  # 美股 业绩披露
 westock event --list                          # 查看各市场支持的事件类型
@@ -339,12 +361,12 @@ westock event --list                          # 查看各市场支持的事件�
 ```
 
 **支持类型（按市场）**：
-- A股 `hs`：`shares` 股本结构、`institution` 机构持股、`fund` 基金持仓、`holders` 股东户数、`buyback` 回购、`rename` 证券更名、`status` 上市状态
-- 港股 `hk`：`split` 拆并股、`rights` 供股、`leader` 董监高变动、`shares` 股本结构、`rename` 更名、`seasoned` 增发、`rating` 机构评级、`meeting` 股东大会、`status` 上市状态
+- A股 `hs`：`shares` 股本结构、`institution` 机构持股、`fund` 基金持仓、`holders` 股东户数、`buyback` 回购、`rename` 证券更名、`status` 上市状态、`suspension` 停复牌
+- 港股 `hk`：`dividend` 分红、`buyback` 回购、`merge` 并购重组、`shareunlock` 解禁、`sharechg` 增减持、`meeting` 股东大会、`ipo` 首发、`seo` 增发、`manager` 董监高、`liststatus` 上市状态、`finance` 业绩、`reorg` 重组、`simutrade` 并行交易、`suspension` 停复牌
 - 美股 `us`：`split` 拆并股（含拆股因子）、`dividend` 分红派息（每股分红完整精度）、`financial_report` 业绩披露、`meeting` 股东大会、`call` 业绩电话会
 
 > **与 `risk` 的差别**：`westock event` 是公司事件**明细取数**（三市场），`westock risk` 是风险事件——A股为个股 8 类风险细查（`risk <代码>`）。风险类走 `risk`，其余公司事件走 `event`。
-> 部分字段（港股拆并股/供股、A股更名/上市状态）可能暂未提供数据，返回「服务端暂未提供该事件字段」属正常。
+> 部分事件类型可能暂无数据（如 A股更名/上市状态、港股/美股个别清单尚未上线），返回「暂无XX数据」属正常。
 
 ### 投资日历
 
@@ -356,7 +378,7 @@ westock calendar --date 2026-06-04                      # 指定日期
 westock calendar --event dividend                          # 只看分红派息
 westock calendar --event financial_report --market hs     # 财报发布（沪深）
 westock calendar --event ipo --market hk                # 新股发行（港股）
-westock calendar --event trading_halt,meeting,lockup_release  # 多类型（逗号分隔）
+westock calendar --event suspension,meeting,share_unlock  # 多类型（逗号分隔）
 westock calendar --event all --market us --limit 30     # 美股所有事件，限制30条
 
 ```
@@ -377,15 +399,15 @@ westock calendar --event all --market us --limit 30     # 美股所有事件，�
 | `financial_report` | 财报发布 |
 | `dividend` | 分红派息 |
 | `ipo` | 新股发行 |
-| `trading_halt` | 停复牌 |
+| `suspension` | 停复牌 |
 | `meeting` | 会议 |
-| `lockup_release` | 限售解禁 |
-| `rights_issue` | 增发 |
+| `share_unlock` | 限售解禁 |
+| `seo` | 增发 |
 | `all` | 全部（不筛选） |
 
 > 输出按中文标签分组（财报发布/分红派息/新股发行/停复牌/会议/限售解禁/增发）。
 > **日期语义**：`--date` 精确过滤到指定当天（hs/hk/us 三市场一致，指定哪天就只返回哪天的事件）；hs/hk 可查过去日期，us 仅支持今天及未来（查过去返回空）。
-> **美股日历**：`--market us` 支持 `--event financial_report`/`dividend`/`meeting`/`call`（`all` 含全部，共分红派息/拆并股/财报发布/股东大会/业绩电话会 5 类）。
+> **美股日历**：`--market us` 支持 `--event financial_report`/`dividend`/`meeting`/`split`/`call`。各市场事件类型覆盖不同：hs 财报/分红/会议/解禁/停复牌/新股/增发，hk 财报/分红/会议/新股/停复牌，us 财报/分红/会议/拆并股/业绩电话会/停复牌（会议/拆并股/业绩电话会由美股清单补充）。
 
 ### 风险事件（A股个股 8 类）
 
@@ -401,13 +423,6 @@ westock risk sh600000,sz000001 --types pledge    # 批量
 **别名**：`st`/`special`→specialtrade、`addition`→seasonedissue`、`leader`→leaderchange、`executive`→executivetransfer、`westock rating`→bondrating。
 
 > 无效代码或无风险事件的股票会输出"暂无风险事件"。
-
-### 停复牌信息
-
-```bash
-westock suspension --market hs             # 停复牌信息（--market hs/hk/us）
-
-```
 
 ---
 
@@ -577,7 +592,11 @@ westock finance sh600000 --type income --start 2024-01-01 --end 2024-12-31
 
 ```
 
-> 跨市场批量对比须**同一市场**（字段口径不同）。
+> **批量开销**：`finance` 是逐只取回，取回次数 = 代码数 × 报表张数。省略 `--type` 时每只要查三张表，
+> 10 只就是 30 次取回，容易触发限频——只需某一张表时务必显式带 `--type`。
+
+> **跨市场批量**：可以一次混传（各只按自身市场的字段口径返回），但 A股/港股/美股字段名与口径不同，
+> 混在一张表里会出现大量空列、数值也不可直接横向比较。要做同口径对比请按市场分开查。
 
 > **参数说明**：`--limit`（期数）与 `--start`/`--end`（日期区间）互斥，请只指定其中一组。日期格式：YYYY-MM-DD。
 > **字段范围**：`--fields core`（默认，聚焦约 30 个核心指标）/ `--fields all`（全字段 100+ 列）。

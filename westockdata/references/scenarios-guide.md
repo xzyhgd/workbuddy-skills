@@ -381,7 +381,7 @@ AI 步骤：
 
 ## 七、事件（事件标签/风险事件/投资日历/停复牌）
 
-> 命令：`westock risk` `westock event` `westock calendar` `westock suspension`
+> 命令：`westock risk` `westock event` `westock calendar`
 
 ### 7.1 投资日历查询（个股事件日历）
 
@@ -393,14 +393,14 @@ AI 步骤：
    → 按事件类型分组输出（财报发布/分红派息/新股发行/停复牌/会议/限售解禁/增发）
 2. 默认查当天，可按 --date 指定日期，--market 指定市场（hs/hk/us）
 3. 按事件类型筛选：westock calendar --date 2026-03-10 --event dividend --market hs
-   → --event 取值：financial_report/dividend/ipo/trading_halt/meeting/lockup_release/rights_issue/all
+   → --event 取值：financial_report/dividend/ipo/suspension/meeting/share_unlock/seo/all
 4. 多类型用逗号分隔：westock calendar --date 2026-03-10 --event dividend,financial_report
 5. 若需查本周，逐天查询周一至周五各天数据，汇总输出
 6. 宏观经济日历请使用 westock macro indicator cn_calendar_future|cn_calendar_hist
 ```
 
 > `westock calendar` 是个股事件日历（查某天哪些股票有分红/财报/IPO等事件）。宏观经济日历用 `westock macro indicator cn_calendar_future|cn_calendar_hist`。
-> 与 `westock suspension` 的区别：`suspension` 返回当前全市场停复牌列表，`calendar --event trading_halt` 只返回指定日期有停复牌事件的股票。
+> 停复牌查 `westock calendar --event suspension`，三市场均支持。
 
 ### 7.2 公司事件明细（event）
 
@@ -1125,7 +1125,7 @@ AI 步骤：
 ## 十八、复合分析工作流（多命令编排 · 采样非全量）
 
 > 以下场景需组合多个**原子命令**完成。westock 只提供原子能力、**不含脚本**；复合分析由 AI 编排原子命令实现。为控制调用次数与耗时，统一遵守四条**编排纪律**：
-> 1. **批量**：`buyback` / `finance` / `quote` 均支持逗号一次多 code，禁止逐只循环调用；`trade-calendar` 一次拿全年。
+> 1. **批量**：`buyback` / `finance` / `quote` 均支持逗号一次多 code，禁止逐只循环调用；但**代码上限不同**——`quote` 无上限，`buyback` / `finance` **单次最多 10 只**（超限直接参数报错）且开销随只数增长，所以出池 20~30 只必须按 10 只分批；`trade-calendar` 一次拿全年。各命令上限见 [commands_cooperation.md §〇](./commands_cooperation.md#〇批量与代码上限)。
 > 2. **并行**：无依赖的调用（如按不同日期分组的多条 `quote --date`）同一轮并行发出。
 > 3. **限量采样**：开放筛选出池时用小 `--limit`（如 20~30），**基于 Top N 代表性样本**，不做全市场全量。
 > 4. **早停降级**：候选池过大先采样；数据不足/缺失直接如实交付边界，改参重跑不超过 1 次。
@@ -1142,8 +1142,9 @@ AI 步骤：
 调用链（以 2026 年回购为例，控制在 ~15 次调用内）：
 1. 出池并限量（screener，仅开放筛选时）：
    screen event --type buyback --limit 30                 # Top 30 样本（buyback = 回购一月内）
-2. 批量补披露日（data，1 次）：
-   westock buyback code1,code2,...,code30 --start 2026-01-01 --end 2026-12-31
+2. 批量补披露日（data，单次上限 10 只，30 只分 3 批）：
+   westock buyback code1,...,code10 --start 2026-01-01 --end 2026-12-31
+   # 同样再补 code11~code20、code21~code30 两批
 3. 一次拿全年交易日（data，1 次）：
    westock trade-calendar --year 2026 --trading-only
 4. 按披露日分组批量查前复权收盘（data，同一披露日一批，可并行）：
@@ -1166,8 +1167,9 @@ AI 步骤：
 调用链（控制在数次调用内）：
 1. 初筛并限量（screener，仅开放筛选时）：
    screen condition --expression 'intersect([ROETTM > 15, PE_TTM > 0])' --limit 20
-2. 批量取年报（data，1~2 次；必须 --fields all）：
-   westock finance code1,...,code20 --fields all --limit 24
+2. 批量取年报（data，单次上限 10 只，20 只分 2 批；必须 --fields all）：
+   westock finance code1,...,code10 --fields all --limit 24
+   # 同样再补 code11~code20 一批
 3. 本地逐只验证：取年报（EndDate 以 -12-31 结尾）ROE
    （ROEWeighted，或 归母净利润 / 股东权益 推算），按 连续 / 最低 / 平均 N 年判定达标
 ```

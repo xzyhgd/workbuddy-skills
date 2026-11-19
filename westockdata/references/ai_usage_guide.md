@@ -809,14 +809,15 @@ A 股增速类字段成对提供，两者含义不同，**问「最新一季」�
 ```bash
 westock event sh600519 --type shares          # A股 股本结构
 westock event sh600519 --type institution     # A股 机构持股
-westock event hk00700 --type rating           # 港股 机构评级
+westock event hk00700 --type dividend         # 港股 分红
+westock event hk00700 --type buyback          # 港股 回购
 westock event usT --type dividend             # 美股 分红派息（每股分红完整精度）
 westock event usAAPL --type financial_report  # 美股 业绩披露
 westock event --list                          # 查看各市场支持的事件类型
 
 ```
 
-> 部分字段（如港股拆并股/供股、A股更名/上市状态）可能暂未提供数据，返回「服务端暂未提供该事件字段」，勿误判为「该股票无此事件」。
+> 部分事件类型可能暂无数据（如 A股更名/上市状态、港股/美股个别清单尚未上线），返回「暂无XX数据」，勿误判为错误。
 
 ---
 

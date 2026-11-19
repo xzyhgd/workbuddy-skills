@@ -2,7 +2,7 @@
   "name": "腾讯自选股-金融数据查询",
   "installedAt": 1784775204624,
   "source": "marketplace",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "skillId": "skill_2053083170922696704",
   "examples_zh": [
     "查询贵州茅台近一年日K线、成交量和MACD指标，并列出最近三次放量上涨日期",
