@@ -1,0 +1,165 @@
+{
+  "schema_version": "1",
+  "capabilities": [
+    "offline-analysis",
+    "platform-data-reading",
+    "pdp-verification",
+    "evidence-persistence"
+  ],
+  "functional_degradations": [
+    {
+      "capability": "offline-analysis",
+      "trigger": "用户未提供可复核的候选、关键词、截图或导出数据。",
+      "fallback": "仅输出研究框架、检索词矩阵和证据清单，不生成需求或采购结论。",
+      "user_input": "候选定义或现有材料。",
+      "limitations": "不能验证实时需求、履约、价格或利润。",
+      "evidence_label": "未验证",
+      "recovery": "提供候选、截图、导出表或允许读取已登录人工浏览器中的公开页面。",
+      "stop_condition": "用户要求实时或采购结论但没有可复核数据。"
+    },
+    {
+      "capability": "platform-data-reading",
+      "trigger": "Ozon 登录态缺失、权限不足、服务异常或出现人机验证。",
+      "fallback": "由用户提供 Seller 后台截图、导出文件或人工读取的字段；只分析已提供材料。",
+      "user_input": "带时间、查询词、筛选条件和统计窗口的快照或导出。",
+      "limitations": "不能确认平台实时状态；访问受限不代表零需求或零成交。",
+      "evidence_label": "部分验证",
+      "recovery": "在已登录人工浏览器完成验证后重新检查并读取；不得绕过访问控制。",
+      "stop_condition": "结论依赖平台数据但没有任何可复核材料。"
+    },
+    {
+      "capability": "pdp-verification",
+      "trigger": "商品详情页无法读取、动态加载失败或无法将后台 SKU 绑定到前台 PDP。",
+      "fallback": "仅保留候选与待补证项，不推断规格、包装、兼容性或可竞争样本。",
+      "user_input": "商品 PDP URL、标题、规格、包装数、ETA、发货地和截图。",
+      "limitations": "无 PDP 锚定时不得采购、不得给单点利润或全市场结论。",
+      "evidence_label": "未验证",
+      "recovery": "取得可访问 PDP 与原始快照后，重新执行 G2 和 G3。",
+      "stop_condition": "用户要求采购或兼容结论但无 PDP 锚定。"
+    },
+    {
+      "capability": "evidence-persistence",
+      "trigger": "当前环境没有可写目录、文件保存失败或用户明确不保存本地证据包。",
+      "fallback": "在交付中输出证据包目录结构、文件清单和待保存内容。",
+      "user_input": "用户指定的可写项目目录，或确认只保留对话内结构化记录。",
+      "limitations": "结论不能声称已完成可复现的本地存证。",
+      "evidence_label": "部分验证",
+      "recovery": "提供可写目录后保存 manifest、快照和模型，再更新证据状态。",
+      "stop_condition": "用户要求可审计证据包但不允许保存且不提供替代存储。"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "python-runtime",
+      "type": "runtime",
+      "required": true,
+      "auth_type": "none",
+      "capabilities": ["offline-analysis", "evidence-persistence"],
+      "checks": [{"id": "python-version", "type": "python", "required": true, "min_version": "3.10"}],
+      "setup": {
+        "official_home_url": "https://www.python.org/",
+        "official_docs_url": "https://docs.python.org/3/using/windows.html",
+        "download_url": "https://www.python.org/downloads/",
+        "steps": ["安装 Python 3.10 或更高版本。", "执行 python --version 确认版本。", "只使用标准库运行环境检查器。"],
+        "verify": "执行 python --version，确认版本不低于 3.10。",
+        "security": "不需要账号或凭据；不从非官方来源下载安装包。",
+        "verified_at": "2026-11-19",
+        "applies_to_version": "1.0.0"
+      },
+      "degradation": [
+        {
+          "capability": "offline-analysis",
+          "trigger": "Python 缺失或版本低于 3.10。",
+          "fallback": "跳过环境脚本，按用户提供材料进行人工结构化分析。",
+          "user_input": "候选、截图、导出或文本材料。",
+          "limitations": "不会生成本地环境状态或可执行检查结果。",
+          "evidence_label": "部分验证",
+          "recovery": "安装兼容 Python 后重新运行环境检查。",
+          "stop_condition": "用户要求正式环境就绪结论但无法运行检查器。"
+        },
+        {
+          "capability": "evidence-persistence",
+          "trigger": "Python 缺失导致无法运行环境检查器。",
+          "fallback": "只输出证据包目录和文件清单。",
+          "user_input": "后续可写目录。",
+          "limitations": "不验证本地运行环境。",
+          "evidence_label": "未验证",
+          "recovery": "安装 Python 后重新检查。",
+          "stop_condition": "要求自动化环境核验但运行时不可用。"
+        }
+      ]
+    },
+    {
+      "id": "ozon-browser-session",
+      "type": "account",
+      "required": false,
+      "auth_type": "browser-login",
+      "capabilities": ["platform-data-reading", "pdp-verification"],
+      "checks": [{"id": "browser-session-status", "type": "auth_probe", "required": true, "target": "已登录人工浏览器会话的只读状态"}],
+      "setup": {
+        "official_home_url": "https://seller.ozon.ru/",
+        "official_docs_url": "https://docs.ozon.ru/global/",
+        "login_url": "https://seller.ozon.ru/",
+        "console_path": ["Seller Portal", "Analytics", "按当前任务选择搜索分析或热销商品报表"],
+        "credential_storage": "仅保存在用户自己的浏览器或 Ozon 官方登录会话中；不得在对话、Skill 文件或脚本中保存 Cookie、密码或令牌。",
+        "rotate_or_revoke": "在 Ozon Seller Portal 的账号安全或会话管理页面退出不需要的会话；具体页面以官方当前界面为准。",
+        "steps": ["在用户自己的浏览器中访问 Ozon Seller Portal 并完成登录。", "仅在需要数据读取时使用已登录人工会话。", "遇到人机验证时由用户手动完成，再重新检查会话状态。"],
+        "verify": "在人工浏览器中打开所需报表或 PDP，并确认页面可见、查询词和筛选条件可复核。",
+        "security": "不得要求用户发送密码、Cookie、完整 Token 或私钥；不得换代理、破解验证或关闭 TLS 校验。",
+        "verified_at": "2026-11-19",
+        "applies_to_version": "1.0.0"
+      },
+      "degradation": [
+        {
+          "capability": "platform-data-reading",
+          "trigger": "未登录、权限不足、人机验证、服务错误或网络不可用。",
+          "fallback": "改用用户提供的后台截图、导出或人工读数；保留时间和样本边界。",
+          "user_input": "报表截图或导出，包含查询词、窗口、筛选与时间。",
+          "limitations": "无法确认实时状态；不可用数据不能当作真实零值。",
+          "evidence_label": "部分验证",
+          "recovery": "恢复已登录人工会话并完成必要验证后重检。",
+          "stop_condition": "没有可复核材料却要求需求或成交结论。"
+        },
+        {
+          "capability": "pdp-verification",
+          "trigger": "无法打开 PDP、动态内容未加载或存在人机验证。",
+          "fallback": "要求用户提供 PDP URL、标题、规格、包装、ETA、发货地及截图。",
+          "user_input": "PDP 信息和原始快照。",
+          "limitations": "不推断规格、兼容性或履约结构。",
+          "evidence_label": "未验证",
+          "recovery": "人工浏览器恢复可读后重新核验 PDP。",
+          "stop_condition": "用户要求采购、兼容或单点利润结论但无 PDP 锚定。"
+        }
+      ]
+    },
+    {
+      "id": "evidence-directory",
+      "type": "permission",
+      "required": false,
+      "auth_type": "none",
+      "capabilities": ["evidence-persistence"],
+      "checks": [{"id": "workspace-write-access", "type": "file", "required": false, "path": "用户指定的项目目录"}],
+      "setup": {
+        "official_home_url": "https://www.workbuddy.cn/docs/workbuddy/Overview",
+        "official_docs_url": "https://www.workbuddy.cn/docs/workbuddy/Overview",
+        "steps": ["为本次研究指定一个项目内可写目录。", "按 evidence-schema 创建候选证据包。", "保存原始快照、PDP、供应商规格和经济模型。"],
+        "verify": "创建一个空的候选目录并确认可写；不读取或修改项目目录外的个人文件。",
+        "security": "只写入用户确认的项目目录；不使用绝对用户路径作为包内规则。",
+        "verified_at": "2026-11-19",
+        "applies_to_version": "1.0.0"
+      },
+      "degradation": [
+        {
+          "capability": "evidence-persistence",
+          "trigger": "目录无权限、路径不可用或用户拒绝保存本地证据。",
+          "fallback": "输出待保存的 manifest 字段、文件清单和哈希记录模板。",
+          "user_input": "可写项目目录，或确认采用对话内记录。",
+          "limitations": "不能声称本地证据包已经落盘或可复现。",
+          "evidence_label": "部分验证",
+          "recovery": "提供可写项目目录后保存并补充路径。",
+          "stop_condition": "交付要求完整审计包但不存在任何允许的存储位置。"
+        }
+      ]
+    }
+  ]
+}
