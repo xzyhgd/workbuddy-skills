@@ -12,8 +12,8 @@
 执行：
 
 1. `fetch_editor_state` 返回当前页面，确定目标页面。
-2. Step 1.5：用户已显式给出分组语义，5 个状态属于同一场景「登录流程状态对照」，单 group，可跳过确认。
-3. Step 2：5 个带完整页面框架的整页稿，多状态对照 → 先评估 ROW；若 outerWidth 超过阈值或原始已竖排，则改 COLUMN/MATRIX 并确认。
+2. 第 2 步（分组）：用户已显式给出分组语义，5 个状态属于同一场景「登录流程状态对照」，单 group，可跳过确认。
+3. 第 3 步（轴向）：5 个带完整页面框架的整页稿，多状态对照 → 先评估 ROW；若 outerWidth 超过阈值或原始已竖排，则改 COLUMN/MATRIX 并确认。
 4. `locate_available_space` 找空位，`padding >= 400`。
 5. `batch_edit(operations)` 生成：
    - outer：`产品团队_登录流程·新版登录流·衍生展示区`
@@ -36,13 +36,13 @@ https://ardot.tencent.com/file/xxx?node_id=70%3A30 帮我把这个画布里的�
 执行：
 
 1. `fetch_editor_state` + `batch_read` 读取入口节点，发现 6 个整页 frame，3 列 × 2 行摆放，命名有重复。
-2. Step 1.5：分组方式存在多种合理解释，且存在内容重复 frame，不能直接拍板。
+2. 第 2 步（分组）：分组方式存在多种合理解释，且存在内容重复 frame，不能直接拍板。
 3. 调用选择题工具提交方案：
    - A. 按页面类型分组。
    - B. 按版本分组。
    - C. 不分组，保持原平铺。
    - D. 自定义。
-4. 用户选择后再进入 Step 2。
+4. 用户选择后再进入第 3 步（轴向）。
 5. 后续生成、校验、截图、返回链接。
 
 ## 示例 C：多端组件对照（MATRIX 场景）
@@ -56,8 +56,8 @@ https://ardot.tencent.com/file/xxx?node_id=70%3A30 帮我把这个画布里的�
 执行：
 
 1. `fetch_editor_state` 定位当前页面。
-2. Step 1.5：用户已显式给出两个维度（按钮类型 × 设备尺寸），可直接用 MATRIX。
-3. Step 2：裸组件多类型目录 → 每个 group 内 ROW；两端对照 → MATRIX。
+2. 第 2 步（分组）：用户已显式给出两个维度（按钮类型 × 设备尺寸），可直接用 MATRIX。
+3. 第 3 步（轴向）：裸组件多类型目录 → 每个 group 内 ROW；两端对照 → MATRIX。
 4. 生成：
    - outer：`设计团队_按钮组件·变体对照·衍生展示区`
    - group 1：`mobile`，4 cells。
@@ -85,15 +85,15 @@ https://ardot.tencent.com/file/xxx?node_id=70%3A30 帮我把这个画布里的�
 执行：
 
 1. `fetch_editor_state` 定位当前页面。
-2. Step 1.5：用户显式给出两个模块维度（文件管理 / 分享管理），单 group 内跨模块并列，可跳过确认。
-3. Step 2：4 个整页稿同 group 内两模块并排 → ROW；预估 `outerWidth` 在阈值内。
+2. 第 2 步（分组）：用户显式给出两个模块维度（文件管理 / 分享管理），单 group 内跨模块并列，可跳过确认。
+3. 第 3 步（轴向）：4 个整页稿同 group 内两模块并排 → ROW；预估 `outerWidth` 在阈值内。
 4. 生成：
    - outer：`产品团队_网盘·关键链路强化·衍生展示区`
    - titlebar：`Product Desktop` / `网盘关键链路` / `2026.7.1`
    - subtitle：`desktop · 网盘文件管理与分享链路`
    - group：`文件管理与分享`
    - 4 个 cell columns，顺序：列表页、详情页、`[column divider]`、创建分享链接、权限设置
-   - **column divider：在「详情页」与「创建分享链接」之间插 1 条 `RECTANGLE + width:1 + height:"fill_container"`，自动撑满行高；禁止 `LINE + rotation + 写死 length`（会只显示上半段）**。同一模块内两 cell 之间不加线（文件管理内部 列表/详情 不加分隔线）。
+   - column divider：在「详情页」与「创建分享链接」之间插 1 条 `RECTANGLE + width:1 + height:"fill_container"`（自动撑满行高）；同一模块内两 cell 之间不加线。
    - outer frame 默认 100px 圆角。
 5. `batch_read` 校验：divider 的 `absoluteBoundingBox.height` ≥ 相邻 cell 最大高度 95%（确认拉通到底，无「只显示上半段」）。
 6. `capture_screenshot` 截图预览，返回 Ardot 链接。

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ozon 综合研究"
+  short_description: "组合 Ozon 商品、店铺、类目、关键词和评论开展市场研究"
+  default_prompt: "使用 $geekbi-ozon-research-skill 基于极鲸云真实数据完成 Ozon 综合研究。"

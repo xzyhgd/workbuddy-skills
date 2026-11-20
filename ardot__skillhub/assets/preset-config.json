@@ -1,6 +1,6 @@
 {
   "$schema": "ardot-showcase-autolayout preset config v1",
-  "$version": "1.0.12",
+  "$version": "1.0.14",
   "$themeAliases": {
     "dark-review": [
       "深色",
@@ -125,6 +125,7 @@
       "fontFamily": "PingFang SC",
       "fontWeight": "Regular",
       "fontSize": 96,
+      "fontSizeZh": 72,
       "color": {
         "r": 1,
         "g": 1,
@@ -236,6 +237,7 @@
       "fontFamily": "PingFang SC",
       "fontWeight": "Regular",
       "fontSize": 96,
+      "fontSizeZh": 72,
       "color": {
         "r": 0,
         "g": 0,
@@ -347,6 +349,7 @@
       "fontFamily": "PingFang SC",
       "fontWeight": "Regular",
       "fontSize": 96,
+      "fontSizeZh": 72,
       "color": {
         "r": 0.106,
         "g": 0.114,
@@ -457,7 +460,8 @@
     "title": {
       "fontFamily": "PingFang SC",
       "fontWeight": "Medium",
-      "fontSize": 120,
+      "fontSize": 96,
+      "fontSizeZh": 72,
       "color": {
         "r": 1,
         "g": 1,

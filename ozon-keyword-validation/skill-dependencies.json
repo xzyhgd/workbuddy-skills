@@ -1,0 +1,218 @@
+{
+  "schema_version": "1",
+  "capabilities": [
+    "offline-keyword-analysis",
+    "seller-sku-reading",
+    "ozon-query-reading",
+    "wordstat-reading",
+    "evidence-persistence",
+    "cross-source-classification"
+  ],
+  "functional_degradations": [
+    {
+      "capability": "offline-keyword-analysis",
+      "trigger": "没有可复核的 SKU 标题、参数、关键词、截图或导出。",
+      "fallback": "仅输出词表模板、字段要求、人工读取步骤和证据清单。",
+      "user_input": "至少一个 SKU 标题或候选关键词。",
+      "limitations": "不生成需求判断、阈值或绿黄红结论。",
+      "evidence_label": "未验证",
+      "recovery": "提供带来源和时间的 SKU 数据、截图或导出。",
+      "stop_condition": "要求数据结论但没有任何可复核输入。"
+    },
+    {
+      "capability": "seller-sku-reading",
+      "trigger": "Ozon Seller API 不可用且用户没有提供可复核的商品导出或截图。",
+      "fallback": "等待用户提供 offer_id、俄语标题和参数来源后再提炼种子词。",
+      "user_input": "商品导出或 Seller 页面原始截图。",
+      "limitations": "不自动读取 SKU，也不按常识补造核心词。",
+      "evidence_label": "未验证",
+      "recovery": "恢复只读 API 授权，或提供带时间与来源的 SKU 材料。",
+      "stop_condition": "没有可核验 SKU 标题或参数却要求种子词结论。"
+    },
+    {
+      "capability": "ozon-query-reading",
+      "trigger": "Seller 页面未登录、权限不足、服务异常、页面字段改变或出现人机验证。",
+      "fallback": "分析用户提供的搜索查询截图或导出，原样保留页面列与字段映射。",
+      "user_input": "可见关键词、筛选、日期范围和全部数据列的截图或导出。",
+      "limitations": "不能确认当前页面实时状态；无窗口日期或截图的行标 UNVERIFIED。",
+      "evidence_label": "部分验证",
+      "recovery": "在人工浏览器中恢复只读访问后重新采集。",
+      "stop_condition": "没有平台证据却要求 Ozon 侧判定。"
+    },
+    {
+      "capability": "wordstat-reading",
+      "trigger": "Wordstat 未登录、空结果、页面不稳定、账户限制或人机验证。",
+      "fallback": "只分析用户提供的 Wordstat 频次和 Dynamics 原始截图。",
+      "user_input": "频次与趋势截图，以及地区、设备、查询式、日期范围。",
+      "limitations": "不得将无证据的趋势或频次补为零；缺失源的词标 UNVERIFIED。",
+      "evidence_label": "部分验证",
+      "recovery": "由用户在人工浏览器恢复页面后重新读取，单词单源最多重试三次。",
+      "stop_condition": "没有 Wordstat 证据却要求绿黄红交叉结论。"
+    },
+    {
+      "capability": "evidence-persistence",
+      "trigger": "未提供项目内可写目录、写入失败或用户选择不落盘。",
+      "fallback": "输出运行目录、文件清单、字段模板和待保存证据编号。",
+      "user_input": "用户确认的项目目录，或确认仅保留对话内结构化记录。",
+      "limitations": "不得宣称交付可审计的本地证据包。",
+      "evidence_label": "部分验证",
+      "recovery": "提供可写项目目录后重新保存数据、截图和 manifest。",
+      "stop_condition": "要求可复现交付但没有允许的存储位置。"
+    },
+    {
+      "capability": "cross-source-classification",
+      "trigger": "关键行缺任一来源、窗口未核验、字段映射变化、查询口径不可解释或证据无法定位。",
+      "fallback": "输出 UNVERIFIED、数据缺口和补证步骤，不计算绿黄红。",
+      "user_input": "补齐对应来源的原始截图、导出、窗口和查询口径。",
+      "limitations": "不能用部分样本进入中位数或给采购、投放结论。",
+      "evidence_label": "未验证",
+      "recovery": "补全两源证据并重新冻结本批阈值。",
+      "stop_condition": "用户要求在缺少关键证据时强行给出绿黄红。"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "python-runtime",
+      "type": "runtime",
+      "required": true,
+      "auth_type": "none",
+      "capabilities": ["offline-keyword-analysis", "evidence-persistence"],
+      "checks": [{"id": "python-version", "type": "python", "required": true, "min_version": "3.10"}],
+      "setup": {
+        "official_home_url": "https://www.python.org/",
+        "official_docs_url": "https://docs.python.org/3/using/windows.html",
+        "download_url": "https://www.python.org/downloads/",
+        "steps": ["安装 Python 3.10 或更高版本。", "执行 python --version 确认版本。", "仅用标准库运行环境检查器。"],
+        "verify": "执行 python --version，确认版本不低于 3.10。",
+        "security": "不需要账号或凭据；不从非官方来源下载安装包。",
+        "verified_at": "2026-11-20",
+        "applies_to_version": "1.1.0"
+      },
+      "degradation": [
+        {
+          "capability": "offline-keyword-analysis",
+          "trigger": "Python 缺失或版本低于 3.10。",
+          "fallback": "跳过环境脚本，基于用户提供材料进行人工结构化分析。",
+          "user_input": "SKU 标题、关键词、截图或导出。",
+          "limitations": "不产生本地环境状态与确定性检查结果。",
+          "evidence_label": "部分验证",
+          "recovery": "安装兼容 Python 后重新运行环境检查。",
+          "stop_condition": "要求正式环境就绪结论但无法运行检查器。"
+        },
+        {
+          "capability": "evidence-persistence",
+          "trigger": "Python 缺失或版本低于 3.10，无法运行本地检查器。",
+          "fallback": "仅输出待保存目录、字段和证据清单。",
+          "user_input": "后续可用的项目目录。",
+          "limitations": "不验证本地环境和目录状态。",
+          "evidence_label": "未验证",
+          "recovery": "安装兼容 Python 后重新检查。",
+          "stop_condition": "要求自动化环境核验但运行时不可用。"
+        }
+      ]
+    },
+    {
+      "id": "ozon-seller-readonly",
+      "type": "api",
+      "required": false,
+      "auth_type": "api-key",
+      "capabilities": ["seller-sku-reading"],
+      "checks": [{"id": "seller-api-readonly-probe", "type": "auth_probe", "required": true, "target": "受信任宿主返回的脱敏 Ozon Seller API 只读状态"}],
+      "setup": {
+        "official_home_url": "https://seller.ozon.ru/",
+        "official_docs_url": "https://docs.ozon.ru/global/",
+        "login_url": "https://seller.ozon.ru/",
+        "credential_url": "https://seller.ozon.ru/",
+        "console_path": ["Seller Portal", "Settings", "API keys"],
+        "scopes": ["读取本店商品目录的最小权限"],
+        "credential_storage": "仅存于用户批准的 Secret 管理器、受信任宿主或 Ozon 官方系统；不得写入对话、Skill 文件、脚本、日志、截图或证据包。",
+        "steps": ["在 Ozon Seller Portal 的官方 API 管理入口创建或轮换只读用途的密钥。", "将凭据放入用户控制的安全存储，不粘贴到对话。", "由受信任宿主执行最小只读探测，仅返回脱敏状态。"],
+        "verify": "仅验证两条白名单只读端点是否能读取本店 SKU 标识与标题；不得发送写入路径请求。",
+        "rotate_or_revoke": "在 Ozon Seller Portal 的 API keys 管理入口轮换或删除不需要的 Key；具体页面以官方当前界面为准。",
+        "security": "不得回显、落盘或截图凭据；不得调用白名单外端点；最小权限、定期轮换并在不需要时撤销。",
+        "verified_at": "2026-11-20",
+        "applies_to_version": "1.1.0"
+      },
+      "degradation": [{
+        "capability": "seller-sku-reading",
+        "trigger": "API 未配置、认证失效、权限不足、额度异常或网络失败。",
+        "fallback": "使用用户导出的商品表或 Seller 页面原始截图提取 SKU 标题与参数。",
+        "user_input": "offer_id、俄语标题和至少一个可核验的参数来源。",
+        "limitations": "不声称 API 已验证；缺失字段标 UNVERIFIED。",
+        "evidence_label": "部分验证",
+        "recovery": "在安全存储中修复授权后由受信任宿主重新探测。",
+        "stop_condition": "没有可核验 SKU 标题或参数却要求自动提炼种子词。"
+      }]
+    },
+    {
+      "id": "human-browser-session",
+      "type": "account",
+      "required": false,
+      "auth_type": "browser-login",
+      "capabilities": ["ozon-query-reading", "wordstat-reading"],
+      "checks": [{"id": "browser-session-status", "type": "auth_probe", "required": true, "target": "受信任宿主返回的脱敏人工浏览器会话状态"}],
+      "setup": {
+        "official_home_url": "https://seller.ozon.ru/",
+        "official_docs_url": "https://wordstat.yandex.ru/",
+        "login_url": "https://seller.ozon.ru/",
+        "console_path": ["用户自己的浏览器", "Ozon Seller 搜索查询或 Wordstat 页面"],
+        "credential_storage": "密码、Cookie、会话和令牌仅留在用户自己的浏览器或官方系统中。",
+        "steps": ["在用户自己的浏览器登录所需官方页面。", "确认关键词、筛选、地区、设备和日期范围可见。", "出现验证时由用户手动完成，再重新检查。"],
+        "verify": "目标页面可见，且可读取关键词、窗口、筛选与数值；不改变任何设置或保存任何配置。",
+        "rotate_or_revoke": "在 Ozon 与 Yandex 官方账户的安全或会话管理页面退出不需要的会话；页面名称以当前官方界面为准。",
+        "security": "不要求密码、Cookie、完整 Token 或私钥；不换代理、不求解挑战、不关闭 TLS 校验、不改扩展设置。",
+        "verified_at": "2026-11-20",
+        "applies_to_version": "1.1.0"
+      },
+      "degradation": [
+        {
+          "capability": "ozon-query-reading",
+          "trigger": "Ozon 页面未登录、不可达、人机验证、字段异常或权限不足。",
+          "fallback": "分析用户提供的截图或导出并保留实际列名。",
+          "user_input": "关键词、筛选、日期范围和全部列可见的原始材料。",
+          "limitations": "不确认页面实时状态；无截图数据为 UNVERIFIED。",
+          "evidence_label": "部分验证",
+          "recovery": "用户在人工浏览器恢复页面后重采集。",
+          "stop_condition": "无 Ozon 证据却要求站内侧判定。"
+        },
+        {
+          "capability": "wordstat-reading",
+          "trigger": "Wordstat 未登录、页面不稳定、人机验证或结果不可见。",
+          "fallback": "分析用户提供的频次与趋势截图。",
+          "user_input": "两个查询式、地区、设备、窗口和原始截图。",
+          "limitations": "缺少任一证据的词不能给交叉结论。",
+          "evidence_label": "部分验证",
+          "recovery": "用户在人工浏览器恢复页面后按单词单源最多三次重试。",
+          "stop_condition": "无 Wordstat 证据却要求绿黄红。"
+        }
+      ]
+    },
+    {
+      "id": "project-evidence-directory",
+      "type": "permission",
+      "required": false,
+      "auth_type": "none",
+      "capabilities": ["evidence-persistence"],
+      "checks": [{"id": "project-write-access", "type": "file", "required": false, "path": "用户确认的项目目录"}],
+      "setup": {
+        "official_home_url": "https://www.workbuddy.cn/docs/workbuddy/Overview",
+        "official_docs_url": "https://www.workbuddy.cn/docs/workbuddy/Overview",
+        "steps": ["指定项目内可写目录。", "仅在其中创建 ozon-keyword-pipeline 运行目录。", "保存 CSV、截图、manifest、进度和阻断记录。"],
+        "verify": "只检查确认目录是否存在并可写；环境检查不创建、覆盖或删除文件。",
+        "security": "仅写入用户确认的项目目录；不扫描或修改项目外个人文件。",
+        "verified_at": "2026-11-20",
+        "applies_to_version": "1.1.0"
+      },
+      "degradation": [{
+        "capability": "evidence-persistence",
+        "trigger": "目录不存在、无权限、保存失败或用户不允许落盘。",
+        "fallback": "输出目录结构、CSV 字段、证据编号和待保存清单。",
+        "user_input": "可写项目目录或确认只保留对话内结构化记录。",
+        "limitations": "不得称本地证据包已完成或可复现。",
+        "evidence_label": "部分验证",
+        "recovery": "提供可写项目目录后再保存并核验。",
+        "stop_condition": "要求审计型交付但没有任何允许的存储位置。"
+      }]
+    }
+  ]
+}

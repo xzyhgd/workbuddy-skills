@@ -65,6 +65,7 @@
     "fontFamily": "PingFang SC",
     "fontWeight": "Regular",
     "fontSize": 96,
+    "fontSizeZh": 72,
     "color": { "r": 1, "g": 1, "b": 1, "a": 1 },
     "tokenName": "white-100"
   },
@@ -116,7 +117,7 @@
 
 - `outer.cornerRadius` 控制展示区外框圆角，默认 100px；不要生成方角 outer。
 - `miniTitleSuffixState` 用于 Style C/D 的状态色后缀。
-- `columnDivider` 只用于不同能力/模块边界，不用于同一链路多状态。用 `RECTANGLE + height:"fill_container"` 自动撑满行高，禁止用 `LINE + rotation + 写死 length`（会导致分割线只显示上半段）。
+- `columnDivider` 只用于不同能力/模块边界，不用于同一链路多状态；`height:"fill_container"` 自动撑满行高。
 - `$ref` 指向 `preset-config.json` 顶层 `$stateTokens`。
 - 本配置默认不绑定具体项目变量 ID；团队可在本地 fork 中自行补充 `ardotVariableId`。
 
@@ -125,7 +126,8 @@
 | Field | `dark-review` | `light-review` | `gray-review` | `presentation` |
 |---|---|---|---|---|
 | `background.color` | black 90% | white 100% | gray `#F1F2F4` | black 100% |
-| `title.fontSize` | 中文 72 / 英文 96 | 中文 72 / 英文 96 | 中文 72 / 英文 96 | 中文 72 / 英文 96 |
+| `title.fontSize` | 96（英文/数字） | 96（英文/数字） | 96（英文/数字） | 96（英文/数字） |
+| `title.fontSizeZh` | 72（中文） | 72（中文） | 72（中文） | 72（中文） |
 | `title.fontWeight` | Regular | Regular | Regular | Medium |
 | `title.color` | white | black 90% | gray-900 近黑 | white |
 | `subtitle.color` | white 40% | black 40% | near-black 50% | white 40% |
@@ -135,7 +137,7 @@
 | `outer.cornerRadius` | 100 | 100 | 100 | 100 |
 | `spacing.*` | 默认间距 | 默认间距 | 默认间距 | 放大间距 |
 
-> `title.fontSize` 按内容语言取：中文 `72`（Ardot ≥96px 中文裁切）、纯英文/数字 `96`。旧「presentation 120」已废弃，大屏演示的强调感改由 `title.fontWeight: Medium` + 放大间距实现。
+> **标题字号按内容语言取，别拿错字段**：`preset-config.json` 的 `title.fontSizeZh=72` 用于中文标题（Ardot ≥96px 中文裁切），`title.fontSize=96` 仅用于纯英文/数字标题。中文标题必须读 `fontSizeZh`，不能读 `fontSize`。旧「presentation 120」已废弃，大屏演示的强调感改由 `title.fontWeight: Medium` + 放大间距实现。
 
 ## 新增 preset
 
@@ -150,13 +152,15 @@
 
 ## 覆盖示例
 
-### 加重标题
+### 把纯英文标题放大到大屏尺寸
+
+仅当标题是纯英文/数字时可用 `fontSize: 96`；中文标题不要覆盖字号（保持 `fontSizeZh: 72`），否则会被 Ardot 裁切。
 
 ```json
 {
   "preset": "dark-review",
   "overrides": {
-    "title": { "fontSize": 120, "fontWeight": "Medium" }
+    "title": { "fontSize": 96, "fontWeight": "Medium" }
   }
 }
 ```
@@ -172,13 +176,15 @@
 }
 ```
 
-### light-review 使用 presentation 标题字号
+### light-review 用 presentation 的强调字重
+
+presentation 已不再用 120 字号；大屏强调靠 `Medium` 字重 + 放大间距，字号仍按语言取（中文 72 / 英文 96）。
 
 ```json
 {
   "preset": "light-review",
   "overrides": {
-    "title": { "fontSize": 120 }
+    "title": { "fontWeight": "Medium" }
   }
 }
 ```

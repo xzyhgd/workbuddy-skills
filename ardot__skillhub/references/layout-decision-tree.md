@@ -1,6 +1,6 @@
 # Layout Decision Tree / 智能布局判断
 
-本文是 SKILL.md Step 2 的详细版。先完成 `scene-grouping.md` 的分组确认，再决定每个 group 用 ROW、COLUMN 还是 MATRIX。
+本文是 SKILL.md 第 3 步（判断布局轴向）的详细版。先完成 `scene-grouping.md` 的分组确认，再决定每个 group 用 ROW、COLUMN 还是 MATRIX。
 
 ## 核心原则
 

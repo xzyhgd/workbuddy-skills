@@ -31,7 +31,7 @@ fetch_editor_state()
 
 ## 2. `locate_available_space`
 
-用途：在目标页面寻找未占用区域。Step 3 写入 outer frame 前必须调用。
+用途：在目标页面寻找未占用区域。第 4 步写入 outer frame 前必须调用。
 
 ```javascript
 locate_available_space({
@@ -146,20 +146,19 @@ U("<nodeId>", {
 
 ### Column divider：用 RECTANGLE + fill_container（不要用 LINE）
 
-分割线插在 cell row（HORIZONTAL）里两个模块的 cell 之间。**必须**用 `RECTANGLE` + `height:"fill_container"`，让它自动撑满行高；禁止用 `LINE + rotation + 写死 length`（会导致「只显示上半段」bug）。
+分割线插在 cell row（HORIZONTAL）里不同模块的 cell 之间，用 `RECTANGLE` + `height:"fill_container"` 自动撑满行高（旧 `LINE + 写死 length` 会只显上半段，详见 `skeleton-spec.md`）。
 
 ```javascript
-// cell row 是 layout:"horizontal"，行高由最高 cell 决定
 divider=I(cellRow, {
   type: "rectangle",
   name: "分割线",
   width: 1,
-  height: "fill_container",   // 关键：自动跟随行内最大 cell 高度，无需 two-pass
-  fill: "#FFFFFF"             // 有 divider-subtle token 时优先绑 token；raw 兜底用 white α=0.16
+  height: "fill_container",   // 自动跟随行内最大 cell 高度
+  fill: "#FFFFFF"             // 有 divider-subtle token 时优先绑 token；raw 兜底 white α=0.16
 })
 ```
 
-实测：相邻 cell 高度 600/500/550 时，fill_container 分割线自动撑到 600，完整拉通。生成后仍应 `batch_read` 读 divider `absoluteBoundingBox.height`，确认 ≥ 相邻 cell 最大高度的 95%。
+生成后 `batch_read` 读 divider `absoluteBoundingBox.height`，确认 ≥ 相邻 cell 最大高度的 95%。
 
 ---
 
@@ -234,18 +233,21 @@ capture_screenshot({
 | 坐标与空位返回不一致 | batch_edit 中手写或偏移了 x/y | 原样使用 locate 返回的 x/y |
 | 字体缺失 | 目标文件没有指定 fontName | 调 `get_available_fonts` 后选择可用字体 |
 | 分割线只显示上半段、没拉通到底 | divider 用了 `LINE + 写死 length`，length 小于实际行高 | 改用 `RECTANGLE + height:"fill_container"`；生成后 `batch_read` 确认高度 ≥ 相邻 cell 最大高度 95% |
+| **点击 page 卡死 / 无限转圈** | **PAGE 节点被嵌套进了另一个 PAGE（页面套页面）** | **严禁用 `M` 把 PAGE 节点移到另一个 PAGE 下**。AI 产物落位到「🤖 编译产物」page 时，只能放 FRAME/画板，不能放子 PAGE。已发生则把子 PAGE 内的 FRAME `M` 到目标 page 顶层，再 `D` 掉空的子 PAGE 壳 |
 
 ---
 
-## 调用顺序回顾
+## 工具调用次序回顾
+
+下面序号是**工具调用先后**（非 SKILL.md 的四步工作流编号）：
 
 ```text
-Step 1 → fetch_editor_state      // 读当前 page + selection
-Step 1 → batch_read              // 读取输入画板结构
-Step 2 → locate_available_space  // 找空位
-Step 3 → batch_edit              // operations 字符串，创建骨架
-Step 4 → batch_read              // 校验尺寸和对齐
-Step 5 → capture_screenshot      // 截图预览
+1 → fetch_editor_state      // 读当前 page + selection
+2 → batch_read              // 读取输入画板结构
+3 → locate_available_space  // 找空位
+4 → batch_edit              // operations 字符串，创建骨架
+5 → batch_read              // 校验尺寸和对齐
+6 → capture_screenshot      // 截图预览
 ```
 
 正常路径 5-6 次工具调用即可。调用次数过多通常说明骨架被拆碎创建，应合并为更清晰的批量操作。

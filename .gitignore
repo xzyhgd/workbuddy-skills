@@ -11,6 +11,8 @@ Desktop.ini
 .env
 .env.*
 credentials.json
+# GeekBI local auth state (machine-specific credential, never sync)
+**/.geekbi/
 
 # Logs
 *.log

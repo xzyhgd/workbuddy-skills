@@ -1,6 +1,6 @@
 # Showcase Skeleton / 骨架数值合同
 
-本文是 `ardot-showcase-autolayout` 的核心数值合同。执行 SKILL.md Step 3 前必须读取。默认数值来自 `dark-review` preset；其他 preset 可覆盖字号、颜色和间距，但不改变结构层级。
+本文是 `ardot-showcase-autolayout` 的核心数值合同。执行 SKILL.md 第 4 步（生成骨架并放置）前必须读取。默认数值来自 `dark-review` preset；其他 preset 可覆盖字号、颜色和间距，但不改变结构层级。
 
 ## 1. Frame 层级
 
@@ -88,17 +88,14 @@
 
 日期永远放在最后，不要夹在 product 和 topic 之间。不要用 `BASELINE`。中英混排或不同字体度量下，BASELINE 容易让日期段下沉；CENTER 更稳定。
 
-Title TEXT 默认（按内容语言取字号，2026-08-05 实测定稿）：
+Title TEXT 默认（实测：PingFang SC 在 96px 及以上中文会被 Ardot 裁切，加大 lineHeight 无效，故中文取 72）：
 
-| 内容语言 | `fontSize` | `fontWeight` | `fills` |
+| 内容语言 | 字号 | `fontWeight` | `fills` |
 |---|---:|---:|---|
 | 中文 | `72`（lineHeight `100`） | `Regular 400` | 当前 preset 主前景 token |
 | 纯英文 / 数字 | `96` | `Medium 500`（演示用）/ `Regular 400` | 当前 preset 主前景 token |
 
-> 旧表「dark-review 96 / presentation 120」已废弃：Ardot 在 ≥96px 中文渲染会裁切，故中文统一 `72`；英文/数字上限 `96`，presentation 不再用 120。
-
-> **⚠️ 中文标题字号上限（2026-08-05 实测）**：PingFang SC 在 **96px 及以上会被 Ardot 渲染裁切**，字形上下各切掉一截，导出 PNG 与 capture_screenshot 都能复现。加大 `lineHeight`（134→160）**无效**，字体注册也正常（font-doctor 全绿）——是Ardot 自身的大字号渲染限制。
-> **结论：中文 title 实际取 `72`（lineHeight 100）**，纯英文/数字标题可用到 96。生成后必须导出复查标题是否完整，不要只看节点属性——属性里 `textAutoResize=WIDTH_AND_HEIGHT`、高度数值都正常，看不出裁切。
+> **配置取值**：中文读 `assets/preset-config.json` 的 `title.fontSizeZh`（=72），英文/数字读 `title.fontSize`（=96），两者在所有 preset 成对存在；中文标题不得误用 `fontSize`（旧值 120 已全废弃）。裁切在节点属性里看不出来，生成后必须导出复查标题完整。
 
 > **中文三段标题会溢出**：`产品名 + 主题 + 日期` 三段 96px 横排在 1440内容宽下实测达 1856px（超出 outerWidth 1840）。中文场景建议改为竖排两行：第一行 `产品名 · 日期`（36px），第二行主题（72px）；此时 Title row 需改 `layoutMode: VERTICAL` 并保持 `counterAxisAlignItems: MIN`，否则子文本会居中、破坏左基准线。
 
@@ -210,13 +207,9 @@ divider 作为 cell row 子节点穿插，插在不同模块的 cell 之间：
 
 因为 `itemSpacing=40` 同时作用于 cell↔divider 和 divider↔cell，等效模块间距为 `40 + 1 + 40 = 81`，模块内相邻 cell 间距为 `40`。
 
-#### 为什么用 RECTANGLE + fill_container，不用 LINE（bug 根因，必读）
+#### 为什么用 RECTANGLE + fill_container，不用 LINE
 
-历史 bug：同事调用后反馈「分割线只显示上面一小段，没拉通到底」。根因是旧规格用 `LINE + rotation=90 + length=cell 高度`，而 `length` 需要**手动**算出并写死一个数值。当 cell 因内容自适应高度、或行内多个 cell 高度不一致（如 500/550/600）时，写死的 length 只覆盖到当初估算的那一段，下半段留空。
-
-正确做法（已实测验证）：cell row 是 `layout: HORIZONTAL`，行高由最高 cell 决定。divider 用 `RECTANGLE` 且 `height: "fill_container"`，会自动被拉伸到行的实际高度，**无需读取、无需计算、无需 two-pass**。实测：相邻 cell 高度分别为 600/500/550 时，两条 fill_container 分割线都自动撑到 600，完整拉通到底。
-
-> 禁止再用 `LINE + rotation + 写死 length` 的旧写法。若必须用 LINE 兜底（个别文件不支持 RECTANGLE fill_container），则必须在生成后 `batch_read` 读取相邻 cell 的 `absoluteBoundingBox.height` 取最大值回写为 length，并按 §7 Reject Signal 复验。
+旧写法 `LINE + rotation + 写死 length` 会在 cell 高度不一致（自适应或 500/550/600 混排）时只盖住上半段。cell row 是 `layout: HORIZONTAL`、行高由最高 cell 决定；divider 用 `RECTANGLE` + `height: "fill_container"` 会自动撑到行高，无需读取或计算。禁用旧写法；若个别文件必须 LINE 兜底，则生成后 `batch_read` 读相邻 cell `absoluteBoundingBox.height` 取最大值回写 length，按 §7 复验。
 
 ### L4 — Cell column FRAME
 
@@ -370,18 +363,7 @@ outerHeight = 450 + 50 + 60 + 40
 
 ## 6. Responsive Backbone
 
-必须保持以下 sizing 规则：
-
-| Frame | primaryAxisSizingMode | counterAxisSizingMode |
-|---|---|---|
-| L0 outer | hug | hug |
-| L1 titlebar | FIXED (450) | **FIXED (= computed outerWidth)** |
-| L1 UI region | hug | hug |
-| L2 group | hug | hug |
-| L3 cell row | hug | hug |
-| L4 cell column | hug | FIXED (cell width) |
-
-Ardot API 不接受 `primaryAxisSizingMode: "AUTO"`。需要 hug 时，用 `width: "hug_contents"` / `height: "hug_contents"` shorthand。
+各层 sizing 见 §2 分层规格表，要点：**只有 titlebar（宽 = computedOuterWidth）和 cell column（宽 = cell 宽）用 FIXED，其余层全部 hug**。Ardot API 不接受 `primaryAxisSizingMode: "AUTO"`，需要 hug 时用 `width: "hug_contents"` / `height: "hug_contents"` shorthand。
 
 若 `batch_read` 发现 outer 宽度异常变小，优先检查：
 
@@ -393,7 +375,7 @@ Ardot API 不接受 `primaryAxisSizingMode: "AUTO"`。需要 hug 时，用 `widt
 
 出现以下任一情况，修复后再交付。Reject signal 是可修复问题，不要把半成品报成完成。尺寸类硬约束同时见 `quality-harness.md`「不可触犯契约」。
 
-1. **未做场景分组确认**：存在多种合理分组方式，但直接拍板分组生成展示区，未向用户确认（除非满足 Step 1.5 的全部跳过条件）。
+1. **未做场景分组确认**：存在多种合理分组方式，但直接拍板分组生成展示区，未向用户确认（除非满足第 2 步分组的全部跳过条件）。
 2. **打散原始画布既有结构**：入口节点已有 Section / 命名前缀 / 容器分组等明确语义，但生成时被重新洗牌。
 3. **把重复画板当成版本差异**：两个 cell 内容完全一致，应提醒用户合并或确认意图，不能虚构状态语义。
 4. **轴向错误**：只按内容类型拍板，没有评估原始排布、候选尺寸和超长风险；或用户已手动竖排仍强行 ROW；或最终 `outerWidth > 3200` / `outerHeight > 2400` 却未重排或确认。
@@ -401,15 +383,12 @@ Ardot API 不接受 `primaryAxisSizingMode: "AUTO"`。需要 hug 时，用 `widt
 6. **颜色未走 preset**：可绑定 token 的颜色被直接写成 `#000000` / `rgba(...)`。
 7. **尺寸塌陷**：outer 宽高与 §4 公式偏差超过 ±32，通常是某层 sizing 错用了 FIXED。
 8. **缺 mini-title**：cell 裸放，没有顶部小标题。
-9. **titlebar 日期位置或格式错误**：标题栏必须按 product / topic / date 排列，日期放最后，格式为 `YYYY.M.D`。
+9. **日期错误**：标题栏按 product / topic / date 排列、日期放最后；格式 `YYYY.M.D`，不要写 `5.20` 或 `2026-05-20`。
 10. **展示区互相贴边或重叠**：`locate_available_space` 的 padding 低于 400，或没有使用返回坐标。
 11. **outer 命名或外观错误**：不符合 `<team>_<business>·<scene>·衍生展示区`，或末尾不是 `衍生展示区`；outer 未设置 100px 圆角。
 12. **mini-title 样式错误**：含 `新增` / `修改` / `废弃` / `灰度` 等状态词，但没有用状态色 Style C/D。
 13. **column divider 使用错误**：同一链路/场景多状态间加了分隔线；或同一 group 内不同能力/模块并列（N≥3）却没在模块边界加线；或 divider 用了 `LINE + 写死 length` 旧写法而非 `RECTANGLE + height:"fill_container"`。
     - **divider 高度未拉通**：生成后 `batch_read` 读 divider 的 `absoluteBoundingBox.height`，若低于相邻 cell 最大高度的 95%，即为「只显示上半段」bug，必须改用 `fill_container` 重生成。
-14. **subtitle 首段错误**：仍使用 `screens` / `cards` / `flows` 等类型词，而不是 `mobile` / `desktop` / `web` / 多端组合。
-15. **subtitle 信息密度错误**：写了 `3 屏对照` / `5 个状态` 等数量信息，或全英文，未写链路/设计稿说明。
-16. **subtitle 重复标题**：说明段与 `<topic>` / 大标题重复，应省略或换成更具体的链路说明。
-17. **日期仍写旧格式**：不要写 `5.20` 或 `2026-05-20`，应写 `2026.5.20`。
-18. **标题与内容左边缘不齐**：title row / subtitle / group label / cell row 的左边缘 `absoluteBoundingBox.x` 不一致（容差 ±1px）。常见根因是 titlebar 未设 `counterAxisAlignItems: MIN` 或 title row 误用 `SPACE_BETWEEN`。
-19. **主题对比度不达标**：切换主题后只改背景没改文字，或主前景色与背景明度差不足以阅读。背景与主前景必须成对取色。
+14. **subtitle 错误**：首段用 `screens` / `cards` / `flows` 等类型词（应为 `mobile` / `desktop` / `web` / 多端组合）；或写了 `3 屏对照` 等数量信息、全英文、未写链路说明；或说明段与 `<topic>` / 大标题重复。
+15. **标题与内容左边缘不齐**：title row / subtitle / group label / cell row 的左边缘 `absoluteBoundingBox.x` 不一致（容差 ±1px）。常见根因是 titlebar 未设 `counterAxisAlignItems: MIN` 或 title row 误用 `SPACE_BETWEEN`。
+16. **主题对比度不达标**：切换主题后只改背景没改文字，或主前景色与背景明度差不足以阅读。背景与主前景必须成对取色。

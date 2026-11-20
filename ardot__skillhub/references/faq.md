@@ -24,7 +24,7 @@ MCP 写入成功后 Ardot 视图有时不自动刷新。在 Ardot 中按 `Cmd+R`
 
 ## Q5：标题歪掉、和内容不对齐？
 
-使用最新版并套用 `references/skeleton-spec.md` 的「对齐硬契约」：titlebar、title row、subtitle、group label、cell row 必须共享同一左基准线。复验 `absoluteBoundingBox.x`，容差 ±1px。
+titlebar、title row、subtitle、group label、cell row 未共享同一左基准线。按 `references/skeleton-spec.md` 的「对齐硬契约」修复，`batch_read` 复验 `absoluteBoundingBox.x`（容差 ±1px）。
 
 ## Q6：想用白底或灰底怎么说？
 
@@ -32,7 +32,7 @@ MCP 写入成功后 Ardot 视图有时不自动刷新。在 Ardot 中按 `Cmd+R`
 
 ## Q7：分组结果不对怎么办？
 
-重新触发，在 Step 1.5 选择「自定义」，直接描述正确分组。若已生成，应重新生成展示区，不要手动微调错误结构。
+重新触发，在第 2 步（分组）选择「自定义」，直接描述正确分组。若已生成，应重新生成展示区，不要手动微调错误结构。
 
 ## Q8：可以只修改已有展示区的某个 cell 吗？
 
@@ -48,4 +48,4 @@ MCP 写入成功后 Ardot 视图有时不自动刷新。在 Ardot 中按 `Cmd+R`
 
 ## Q11：分割线只显示上半段、没拉通到底？
 
-这是早期版本（≤1.0.8）用 `LINE + rotation + 写死 length` 的已知问题：写死的长度只覆盖到当初估算的那一段，相邻 cell 高度不一致时下半段留空。**当前版本已修复**——divider 改用 `RECTANGLE + height:"fill_container"`，自动撑满行高，无需写死长度、无需 two-pass。若你仍看到此现象，请升级到当前版本，或检查生成是否误用了旧写法（见 `references/skeleton-spec.md` §Divider）。
+生成时误用了旧写法 `LINE + 写死 length`。正确写法是 `RECTANGLE + height:"fill_container"`，自动撑满行高（详见 `references/skeleton-spec.md` §Column dividers）。
